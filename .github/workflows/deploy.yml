@@ -1,0 +1,63 @@
+name: Deploy datosmujer.cl (FTPS manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry-run: simula el deploy sin subir nada (recomendado primero)"
+        type: boolean
+        default: true
+
+concurrency:
+  group: deploy-datosmujer
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp
+
+      - name: Deploy por FTPS (lftp mirror — paralelo + reintentos + resume)
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          DRY=""
+          if [ "${DRY_RUN}" = "true" ]; then DRY="--dry-run --verbose"; fi
+          # mirror --reverse: sube local -> remoto. --ignore-time: compara por TAMANO
+          #   (salta archivos identicos ya en el server -> deploy incremental rapido).
+          # --continue + reintentos: sobrevive cortes TLS en transferencias largas.
+          # NO se usa --delete: nunca borra archivos del servidor (core/uploads/etc a salvo).
+          lftp -c "
+            set cmd:fail-exit true;
+            set ssl:verify-certificate true;
+            set ftp:ssl-force true;
+            set ftp:ssl-protect-data true;
+            set net:max-retries 3;
+            set net:persist-retries 5;
+            set net:timeout 20;
+            set net:reconnect-interval-base 5;
+            set mirror:parallel-transfer-count 4;
+            open -u '${FTP_USERNAME}','${FTP_PASSWORD}' -p 21 '${FTP_SERVER}';
+            mirror --reverse --continue --ignore-time --parallel=4 ${DRY} \
+              --exclude-glob *.md \
+              --exclude-glob wp-config.php \
+              --exclude-glob wp-config-sample.php \
+              --exclude-glob *.sql \
+              --exclude-glob *.sql.gz \
+              --exclude-glob error_log \
+              -x '^\.git' \
+              -x '^_db_backup/' \
+              -x '^wp-content/uploads/' \
+              -x '^wp-content/cache/' \
+              -x '^wp-content/wflogs/' \
+              ./ /public_html/ ;
+          "

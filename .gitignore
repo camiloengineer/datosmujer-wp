@@ -1,0 +1,38 @@
+# === SECRETOS — NUNCA versionar ===
+wp-config.php
+wp-content/wp-cache-config.php
+CLAUDE.md
+.htpasswds
+*.sql
+*.sql.gz
+.env
+.env.*
+auth.json
+
+# === Datos de usuario / media (no es codigo) ===
+wp-content/uploads/
+
+# === Cache / temporales / regenerables ===
+wp-content/cache/
+wp-content/upgrade/
+wp-content/upgrade-temp-backup/
+wp-content/wflogs/
+wp-content/plugins/wordfence/tmp/
+wp-content/*.log
+*.log
+error_log
+
+# === Nucleo de WordPress (vendor, no se versiona) ===
+/wp-admin/
+/wp-includes/
+
+# === Backups locales (fuera del repo; defensivo) ===
+_db_backup/
+
+# === Artefactos de descarga ===
+.listing
+_wget.log
+
+# === SO / editor ===
+.DS_Store
+Thumbs.db
