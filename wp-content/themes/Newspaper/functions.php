@@ -616,3 +616,19 @@ function td_filter_youtube_embed( $block_content, $block ) {
 
   return $block_content;
 }
+
+// Activar "Unique Articles" en la homepage para evitar que se repitan noticias entre secciones
+add_action('td_wp_booster_after_header', function() {
+    if (is_front_page()) {
+        td_unique_posts::$unique_articles_enabled = true;
+    }
+}, 20);
+
+add_filter('td_wp_booster_module_constructor', function($module, $post) {
+    if (is_front_page() && get_class($module) !== 'td_module_trending_now') {
+        if (!in_array($post->ID, td_unique_posts::$rendered_posts_ids)) {
+            td_unique_posts::$rendered_posts_ids[] = $post->ID;
+        }
+    }
+    return $module;
+}, 10, 2);
