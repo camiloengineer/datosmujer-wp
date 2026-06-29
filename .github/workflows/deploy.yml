@@ -55,6 +55,7 @@ jobs:
               --exclude-glob *.sql.gz \
               --exclude-glob error_log \
               -x '^\.git' \
+              -x '^db-migrations/' \
               -x '^_db_backup/' \
               -x '^wp-content/uploads/' \
               -x '^wp-content/cache/' \
